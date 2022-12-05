@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/Nik-U/pbc"
 )
@@ -45,6 +46,8 @@ func main() {
 	var hash_array []string
 	h_temp := pairing.NewZr()
 
+	print("\nSIGN...\n")
+	start := time.Now().UnixNano() / int64(time.Millisecond)
 	for i := int64(0); i < totalDataBlocks; i++ {
 		filename := "part_" + strconv.FormatInt(i, 10)
 		b, err := os.ReadFile(filename) // just pass the file name
@@ -56,7 +59,7 @@ func main() {
 
 		t1 := pairing.NewZr()
 
-		print("\nSIGN...\n")
+		//print("\nSIGN...\n")
 
 		H.SetFromStringHash(message, sha256.New())
 		//print("Hash=", H.String(), "\n")
@@ -71,6 +74,9 @@ func main() {
 
 		s_array = append(s_array, S.String())
 	}
+	stop := time.Now().UnixNano() / int64(time.Millisecond)
+	elapsed := stop - start
+	print("Sign time: ", elapsed, "\n")
 
 	/*print("\ns_array=")
 	print(s_array[0])
@@ -96,6 +102,7 @@ func main() {
 	print("\n")*/
 	var delta_array []string
 	delta_temp := pairing.NewG1()
+	csp_start := time.Now().UnixNano() / int64(time.Millisecond)
 	for i := int64(0); i < totalDataBlocks; i++ {
 		r_temp.SetString(r_array[i], 10)
 		//print(r_temp.String(), "\n")
@@ -119,12 +126,17 @@ func main() {
 		print("\ndelta=")
 		print(delta.String())*/
 	}
+	csp_stop := time.Now().UnixNano() / int64(time.Millisecond)
+	csp_duration := csp_stop - csp_start
+	print("\nCSP proof delta computation time: ", csp_duration)
 
 	//verifier generate omega and do verify the proof
 	//total_omega := pairing.NewG1()
 	//total_rp := pairing.NewG1()
+	print("\nVERIFICATION...")
+	verify_start := time.Now().UnixNano() / int64(time.Millisecond)
 	for i := int64(0); i < totalDataBlocks; i++ {
-		print("\nVERIFICATION...")
+		//print("\nVERIFICATION...")
 
 		s_temp.SetString(s_array[i], 10)
 		r_temp.SetString(r_array[i], 10)
@@ -144,21 +156,24 @@ func main() {
 		delta_temp.SetString(delta_array[i], 10)
 
 		t3.Pair(delta_temp, omega)
-		print("\nt3=")
+		/*print("\nt3=")
 		print(t3.String())
-		print("================================\nt4=")
+		print("================================\nt4=")*/
 		temp2 := pairing.NewG1()
 		temp2.MulZn(P, r_temp)
 
 		//t4.Pair(total_rp, total_rp)
 		t4.Pair(temp2, temp2)
-		print(t4.String())
+		//print(t4.String())
 
 		if !t3.Equals(t4) {
-			print("\nSignature is invalid!\n")
+			print("Signature is invalid!")
 		} else {
-			print("\nSignature valid\n")
+			print("Signature valid")
 		}
 	}
+	verify_stop := time.Now().UnixNano() / int64(time.Millisecond)
+	verify_duration := verify_stop - verify_start
+	print("\nverification time: ", verify_duration)
 
 }
